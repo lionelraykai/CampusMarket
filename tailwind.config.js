@@ -1,0 +1,18 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+    content: [
+        "./index.html",
+        "./src/**/*.{js,ts,jsx,tsx}",
+    ],
+    theme: {
+        extend: {
+            colors: {
+                brand: {
+                    blue: '#1a56db', // Approximate match for the blue in the screenshot
+                    dark: '#0f172a',
+                }
+            }
+        },
+    },
+    plugins: [],
+}
