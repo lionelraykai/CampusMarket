@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   GraduationCap, 
   Mail, 
@@ -12,7 +13,8 @@ import {
 } from 'lucide-react';
 import './LoginScreen.css';
 
-const LoginScreen = () => {
+const LoginScreen = ({ onLogin }) => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('login');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -29,6 +31,8 @@ const LoginScreen = () => {
   const [errors, setErrors] = useState({});
 
   const isLogin = activeTab === 'login';
+  const isSignup = activeTab === 'signup';
+  const isForgot = activeTab === 'forgot';
 
   const handleInputChange = (e) => {
     const { id, value, type, checked } = e.target;
@@ -52,19 +56,21 @@ const LoginScreen = () => {
       newErrors.email = 'Email is required';
     } else if (!emailRegex.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address';
-    } else if (!isLogin && !formData.email.endsWith('.edu')) {
+    } else if (!isLogin && !isForgot && !formData.email.endsWith('.edu')) {
        // Optional: Enforce .edu only on signup if desired
        // newErrors.email = 'Please use your .edu school email';
     }
 
     // Password Validation
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (!isLogin && formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
+    if (!isForgot) {
+      if (!formData.password) {
+        newErrors.password = 'Password is required';
+      } else if (!isLogin && formData.password.length < 8) {
+        newErrors.password = 'Password must be at least 8 characters';
+      }
     }
 
-    if (!isLogin) {
+    if (isSignup) {
       // Full Name Validation
       if (!formData.fullname.trim()) {
         newErrors.fullname = 'Full Name is required';
@@ -89,8 +95,12 @@ const LoginScreen = () => {
     e.preventDefault();
     if (validateForm()) {
       console.log('Form Submitted', formData);
-      // Proceed with login/signup API call
-      alert(`${isLogin ? 'Login' : 'Signup'} Successful!`);
+      // if (onLogin) {
+      //   onLogin(formData);
+      // } else {
+      //   alert(`${isLogin ? 'Login' : 'Signup'} Successful!`);
+      // }
+             onLogin(formData);
     } else {
       console.log('Validation Failed');
     }
@@ -99,13 +109,15 @@ const LoginScreen = () => {
   const switchTab = (tab) => {
     setActiveTab(tab);
     setErrors({});
-    setFormData({
-      fullname: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-      terms: false
-    });
+    if (tab !== 'forgot') {
+      setFormData({
+        fullname: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+        terms: false
+      });
+    }
   };
 
   return (
@@ -171,29 +183,35 @@ const LoginScreen = () => {
         <div className="login-card">
           
           <div className="login-header">
-            <h2 className="login-title">{isLogin ? 'Welcome Back' : 'Create Account'}</h2>
+            <h2 className="login-title">
+              {isLogin ? 'Welcome Back' : isSignup ? 'Create Account' : 'Reset Password'}
+            </h2>
             <p className="login-subtitle">
               {isLogin 
                 ? 'Log in to access your secure campus account.' 
-                : 'Join your university\'s exclusive marketplace.'}
+                : isSignup 
+                  ? 'Join your university\'s exclusive marketplace.'
+                  : 'Enter your email to receive a password reset link.'}
             </p>
           </div>
 
-          {/* Tabs */}
-          <div className="tabs-container">
-            <button
-              onClick={() => switchTab('login')}
-              className={`tab-button ${isLogin ? 'active' : ''}`}
-            >
-              Log In
-            </button>
-            <button
-              onClick={() => switchTab('signup')}
-              className={`tab-button ${!isLogin ? 'active' : ''}`}
-            >
-              Sign Up
-            </button>
-          </div>
+          {/* Tabs - Hidden for Forgot Password */}
+          {!isForgot && (
+            <div className="tabs-container">
+              <button
+                onClick={() => switchTab('login')}
+                className={`tab-button ${isLogin ? 'active' : ''}`}
+              >
+                Log In
+              </button>
+              <button
+                onClick={() => switchTab('signup')}
+                className={`tab-button ${isSignup ? 'active' : ''}`}
+              >
+                Sign Up
+              </button>
+            </div>
+          )}
 
           <form className="login-form" onSubmit={handleSubmit} noValidate>
             {/* Full Name (Signup only) */}
@@ -244,40 +262,42 @@ const LoginScreen = () => {
               ) : null}
             </div>
 
-            {/* Password Field */}
-            <div className="form-group">
-              <label className="form-label" htmlFor="password">
-                Password
-              </label>
-              <div className="input-wrapper">
-                <div className="input-icon">
-                  <Lock size={20} />
+            {/* Password Field (Login/Signup only) */}
+            {!isForgot && (
+              <div className="form-group">
+                <label className="form-label" htmlFor="password">
+                  Password
+                </label>
+                <div className="input-wrapper">
+                  <div className="input-icon">
+                    <Lock size={20} />
+                  </div>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    id="password"
+                    placeholder={isLogin ? "••••••••" : "Min. 8 characters"}
+                    className={`form-input ${errors.password ? 'error' : ''}`}
+                    value={formData.password}
+                    onChange={handleInputChange}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="password-toggle"
+                  >
+                    {showPassword ? (
+                      <EyeOff size={20} />
+                    ) : (
+                      <Eye size={20} />
+                    )}
+                  </button>
                 </div>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  id="password"
-                  placeholder={isLogin ? "••••••••" : "Min. 8 characters"}
-                  className={`form-input ${errors.password ? 'error' : ''}`}
-                  value={formData.password}
-                  onChange={handleInputChange}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="password-toggle"
-                >
-                  {showPassword ? (
-                    <EyeOff size={20} />
-                  ) : (
-                    <Eye size={20} />
-                  )}
-                </button>
+                {errors.password && <p className="error-message">{errors.password}</p>}
               </div>
-              {errors.password && <p className="error-message">{errors.password}</p>}
-            </div>
+            )}
 
             {/* Confirm Password (Signup only) */}
-            {!isLogin && (
+            {isSignup && (
               <div className="form-group">
                 <label className="form-label" htmlFor="confirm-password">
                   Confirm Password
@@ -310,7 +330,7 @@ const LoginScreen = () => {
               </div>
             )}
 
-            {/* Actions (Login: Remember/Forgot; Signup: Terms) */}
+            {/* Actions (Login: Remember/Forgot; Signup: Terms; Forgot: Back) */}
             <div className="form-actions">
               {isLogin ? (
                 <>
@@ -324,13 +344,15 @@ const LoginScreen = () => {
                       Stay logged in
                     </label>
                   </div>
-                  <div className="forgot-wrapper">
-                    <a href="#" className="forgot-password">
+                  <div className="forgot-wrapper" onClick={() => switchTab('forgot')}>
+                    <p 
+                    style={{color: 'blue'}}
+                    >
                       Forgot password?
-                    </a>
+                    </p>
                   </div>
                 </>
-              ) : (
+              ) : isSignup ? (
                 <div className="checkbox-wrapper" style={{ alignItems: 'flex-start' }}>
                    <div style={{ paddingTop: '2px' }}>
                     <input
@@ -348,6 +370,16 @@ const LoginScreen = () => {
                     {errors.terms && <p className="error-message" style={{ marginTop: '0.25rem' }}>{errors.terms}</p>}
                   </div>
                 </div>
+              ) : (
+                <div className="forgot-wrapper" style={{ width: '100%', textAlign: 'center' }}>
+                  <button 
+                    type="button" 
+                    className="forgot-password"
+                    onClick={() => switchTab('login')}
+                  >
+                    Return to Login
+                  </button>
+                </div>
               )}
             </div>
 
@@ -356,14 +388,14 @@ const LoginScreen = () => {
               type="submit"
               className="submit-button"
             >
-              {isLogin ? 'Log In Securely' : 'Create Secure Account'}
+              {isLogin ? 'Log In Securely' : isSignup ? 'Create Secure Account' : 'Reset My Password'}
               <ArrowRight size={16} />
             </button>
 
             {/* Security Badge */}
             <div className="security-badge">
               <ShieldCheck size={16} />
-              {isLogin ? 'Protected by Industry-Standard Encryption' : 'JWT-secured session management'}
+              {isLogin || isForgot ? 'Protected by Industry-Standard Encryption' : 'JWT-secured session management'}
             </div>
           </form>
 
